@@ -1,0 +1,19 @@
+<idea-plugin version="2">
+    <name>ReviewBoard</name>
+    <description>Post review to review board</description>
+    <version>1.0</version>
+    <vendor>YourCompany</vendor>
+    <idea-version since-build="95.627"/>
+    <depends>Subversion</depends>
+    <project-components>
+        <component>
+            <implementation-class>rb.ReviewBoardConfig</implementation-class>
+        </component>
+    </project-components>
+
+    <actions>
+        <action id="PostReview" class="rb.PostReviewAction" text="PostReview" description="Post Review">
+            <add-to-group group-id="ChangesViewPopupMenu" anchor="last" relative-to-action=""/>
+        </action>
+    </actions>
+</idea-plugin>
