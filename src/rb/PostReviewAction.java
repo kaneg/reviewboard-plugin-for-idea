@@ -279,25 +279,4 @@ public class PostReviewAction extends AnAction {
   public boolean isDumbAware() {
     return true;
   }
-
-  private static void preloadContent(final Project project, final Change[] changes) {
-    ProgressManager.getInstance().runProcessWithProgressSynchronously(new Runnable() {
-                                                                        public void run() {
-                                                                          for (Change change : changes) {
-                                                                            checkLoadContent(change.getBeforeRevision());
-                                                                            checkLoadContent(change.getAfterRevision());
-                                                                          }
-                                                                        }
-
-                                                                        private void checkLoadContent(final ContentRevision revision) {
-                                                                          if (revision != null && !(revision instanceof BinaryContentRevision)) {
-                                                                            try {
-                                                                              revision.getContent();
-                                                                            } catch (VcsException e1) {
-                                                                              // ignore at the moment
-                                                                            }
-                                                                          }
-                                                                        }
-                                                                      }, VcsBundle.message("create.patch.loading.content.progress"), false, project);
-  }
 }

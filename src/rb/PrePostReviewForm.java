@@ -3,12 +3,16 @@ package rb;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.ui.DialogWrapper;
 import com.intellij.openapi.ui.Messages;
+import com.intellij.ui.TextFieldWithHistory;
+import com.intellij.ui.TextFieldWithStoredHistory;
 
 import javax.swing.*;
 
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.KeyAdapter;
+import java.awt.event.KeyEvent;
 
 /**
  * Created by IntelliJ IDEA.
@@ -25,11 +29,11 @@ public class PrePostReviewForm extends DialogWrapper {
   private JTextField summaryTextField;
   private JTextField branchTextField;
   private JTextField bugTextField;
-  private JTextField groupTextField;
-  private JTextField peopleTextField;
+  private TextFieldWithStoredHistory groupTextField;
+  private TextFieldWithStoredHistory peopleTextField;
   private JButton showDiffButton;
   private JButton loadReviewButton;
-  private Project project;
+    private Project project;
   private JTextArea diffTextArea;
 
   public PrePostReviewForm(final Project project, String commitMessage, final String patch) {
@@ -111,6 +115,7 @@ public class PrePostReviewForm extends DialogWrapper {
 
   @Override
   public boolean isOKActionEnabled() {
+      peopleTextField.addCurrentTextToHistory();
     if (reviewIdTextField.isEnabled()) {
       String reviewId = reviewIdTextField.getText();
       if (reviewId == null || "".equals(reviewId)) {
@@ -153,5 +158,21 @@ public class PrePostReviewForm extends DialogWrapper {
   protected JComponent createCenterPanel() {
     return getPreviewComponent();
   }
+
+    private void createUIComponents() {
+        peopleTextField = new TextFieldWithStoredHistory("rb.people");
+
+//        peopleTextField.addKeyboardListener(new KeyAdapter() {
+//            @Override
+//            public void keyTyped(KeyEvent e) {
+//                System.out.println(e);
+//                if (e.getKeyCode() == KeyEvent.VK_DELETE) {
+//                    peopleTextField.setSelectedIndex(-1);
+////                    peopleTextField
+//                }
+//            }
+//        });
+        groupTextField=new TextFieldWithStoredHistory("rb.group");
+    }
 }
 
