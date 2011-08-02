@@ -1,6 +1,7 @@
 package rb;
 
-import java.io.*;
+import java.io.ByteArrayInputStream;
+import java.io.InputStream;
 
 /**
  * Created by IntelliJ IDEA.
@@ -9,31 +10,31 @@ import java.io.*;
  * Time: 12:12 PM
  */
 public class MemoryFile {
-  String name;
-  String content;
+    String name;
+    String content;
 
-  public MemoryFile(String name, String diff) {
-    this.name = name;
-    this.content = diff;
-  }
+    public MemoryFile(String name, String diff) {
+        this.name = name;
+        this.content = diff;
+    }
 
-  public String getName() {
-    return name;
-  }
+    public String getName() {
+        return name;
+    }
 
-  public void setName(String name) {
-    this.name = name;
-  }
+    public void setName(String name) {
+        this.name = name;
+    }
 
-  public String getContent() {
-    return content;
-  }
+    public String getContent() {
+        return content;
+    }
 
-  public void setContent(String content) {
-    this.content = content;
-  }
+    public void setContent(String content) {
+        this.content = content;
+    }
 
-  public InputStream getInputStream() {
-    return new ByteArrayInputStream(content.getBytes());
-  }
+    public InputStream getInputStream() {
+        return new ByteArrayInputStream(content.getBytes());
+    }
 }

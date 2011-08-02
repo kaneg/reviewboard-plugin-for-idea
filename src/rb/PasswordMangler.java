@@ -13,17 +13,19 @@ package rb;
  * @version $Revision: 1.0$
  */
 public class PasswordMangler {
-  private static final Encrypter ENCRYPTER = new Encrypter("*&^$^%3&8,.@;as!=-#/!21".toCharArray());
+    private static final Encrypter ENCRYPTER = new Encrypter("*&^$^%3&8,.@;as!=-#/!21".toCharArray());
 
-  static String encode(String password) {
-    if (password == null)
-      return null;
-    return ENCRYPTER.encrypt(password);
-  }
+    static String encode(String password) {
+        if (password == null) {
+            return null;
+        }
+        return ENCRYPTER.encrypt(password);
+    }
 
-  static String decode(String encodedPassword) {
-    if (encodedPassword == null)
-      return null;
-    return ENCRYPTER.decrypt(encodedPassword);
-  }
+    static String decode(String encodedPassword) {
+        if (encodedPassword == null) {
+            return null;
+        }
+        return ENCRYPTER.decrypt(encodedPassword);
+    }
 }
