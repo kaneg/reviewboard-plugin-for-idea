@@ -16,11 +16,7 @@ import com.intellij.openapi.ui.Messages;
 import com.intellij.openapi.vcs.FilePath;
 import com.intellij.openapi.vcs.ProjectLevelVcsManager;
 import com.intellij.openapi.vcs.VcsException;
-import com.intellij.openapi.vcs.changes.Change;
-import com.intellij.openapi.vcs.changes.ChangeListManager;
-import com.intellij.openapi.vcs.changes.ContentRevision;
-import com.intellij.openapi.vcs.changes.InvokeAfterUpdateMode;
-import com.intellij.openapi.vcs.changes.LocalChangeList;
+import com.intellij.openapi.vcs.changes.*;
 import com.intellij.openapi.vcs.history.VcsRevisionNumber;
 import com.intellij.openapi.vfs.VirtualFile;
 import org.jetbrains.annotations.NotNull;
@@ -190,7 +186,7 @@ public class PostReviewAction extends AnAction {
                 return;
             }
             StringWriter w = new StringWriter();
-            UnifiedDiffWriter.write(filePatches, w, "\r\n");
+            UnifiedDiffWriter.write(project, filePatches, w, "\r\n", null);
             w.close();
             patch = w.toString();
         } catch (Exception e) {
