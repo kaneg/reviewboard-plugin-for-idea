@@ -116,7 +116,7 @@ public class PostReviewAction extends AnAction {
                 if (localRootDir == null && workingCopyRoot != null) {
                     localRootDir = workingCopyRoot.getPath();
                 }
-                SVNURL url = SvnUtil.getUrl(workingCopyRoot);
+                SVNURL url = SvnUtil.getUrl(svnVcs, workingCopyRoot);
                 System.out.println("remoteRootUrl:" + url);
                 if (url != null && remoteRootUrl == null) {
                     remoteRootUrl = url.toString();
