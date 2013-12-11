@@ -1,10 +1,11 @@
 <idea-plugin version="2">
     <name>ReviewBoard</name>
-    <description>Post review to review board</description>
-    <version>1.0.1</version>
-    <vendor>YourCompany</vendor>
+    <description>Post review to review board. Code: https://code.google.com/p/reviewboard-plugin-for-idea/</description>
+    <version>1.0.2</version>
+    <vendor>Kane</vendor>
     <idea-version since-build="95.627"/>
     <depends>Subversion</depends>
+    <depends>com.intellij.modules.lang</depends>
     <project-components>
         <component>
             <implementation-class>rb.ReviewBoardConfig</implementation-class>
