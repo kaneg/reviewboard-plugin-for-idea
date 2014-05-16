@@ -49,6 +49,7 @@ public class PostReviewAction extends AnAction {
         }
         if (!ProjectLevelVcsManager.getInstance(project).checkAllFilesAreUnder(svnVcs, vFiles)) {
             setActionEnable(event, true);
+            Messages.showWarningDialog("Some of selected files are not under control of SVN.", "Warning");
             return;
         }
 

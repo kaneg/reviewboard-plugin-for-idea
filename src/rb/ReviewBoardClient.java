@@ -10,16 +10,8 @@ import com.intellij.openapi.progress.ProgressIndicator;
 import com.intellij.openapi.ui.Messages;
 
 import javax.swing.*;
-import java.io.BufferedReader;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.OutputStream;
-import java.io.PrintWriter;
-import java.net.Authenticator;
-import java.net.HttpURLConnection;
-import java.net.PasswordAuthentication;
-import java.net.URL;
-import java.net.URLConnection;
+import java.io.*;
+import java.net.*;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
@@ -31,7 +23,7 @@ import java.util.Map;
  */
 public class ReviewBoardClient {
 
-    public static boolean postReview(ReviewSettings settings, final ProgressIndicator progressIndicator) {
+    public static boolean postReview(final ReviewSettings settings, final ProgressIndicator progressIndicator) {
         ReviewBoardClient reviewBoardClient = new ReviewBoardClient(settings.getServer(), settings.getUsername(), settings.getPassword());
         try {
             String reviewId = settings.getReviewId();
@@ -39,17 +31,36 @@ public class ReviewBoardClient {
                 progressIndicator.setText("Creating review draft...");
                 NewReviewResponse newRequest = null;
                 try {
-                  newRequest = reviewBoardClient.createNewRequest(settings.getSvnRoot());
-                }
-                catch (Exception exception){
-                  System.err.println("Received "+exception+", while creating a new request");
-                  // There is a very good chance that we received a 400, since the SVNRoot we
-                  // passed may not match what is configured on the server. Now try to
-                  // recreate the SVN settings based on what is configured on the server and retry.
-                  if ( reviewBoardClient.updateSVNAttributes(settings) ){  // side-effect to "settings"
-                    System.out.println("Retrying the request with svnroot : "+settings.getSvnRoot());
                     newRequest = reviewBoardClient.createNewRequest(settings.getSvnRoot());
-                  }
+                } catch (final Exception exception) {
+                    System.err.println("Received " + exception + ", while creating a new request");
+                    // There is a very good chance that we received a 400, since the SVNRoot we
+                    // passed may not match what is configured on the server. Now try to
+                    // recreate the SVN settings based on what is configured on the server and retry.
+                    if (reviewBoardClient.updateSVNAttributes(settings)) {  // side-effect to "settings"
+                        System.out.println("Retrying the request with svnroot : " + settings.getSvnRoot());
+                        newRequest = reviewBoardClient.createNewRequest(settings.getSvnRoot());
+                    } else {
+                        SwingUtilities.invokeLater(new Runnable() {
+                                                       @Override
+                                                       public void run() {
+                                                           Messages.showMessageDialog("Failed to get svn repository from server:" + exception.getMessage(), "Alert", null);
+
+                                                       }
+                                                   }
+                        );
+
+                    }
+                }
+                if (newRequest == null) {
+                    SwingUtilities.invokeLater(new Runnable() {
+                                                   @Override
+                                                   public void run() {
+                                                       Messages.showMessageDialog("Cannot post new request. Please check your svn setting and review board server's svn repository setting." + "You SVN root is " + settings.getSvnRoot(), "Alert", null);
+                                                   }
+                                               }
+                    );
+                    return false;
                 }
                 progressIndicator.setText("Create new request:" + newRequest.review_request);
                 System.out.println(newRequest.review_request.id);
@@ -61,11 +72,11 @@ public class ReviewBoardClient {
             if (!response.isOk()) {
                 final Response finalResponse = response;
                 SwingUtilities.invokeLater(new Runnable() {
-                    @Override
-                    public void run() {
-                        JOptionPane.showMessageDialog(null, finalResponse.err, "Warning", JOptionPane.WARNING_MESSAGE);
-                    }
-                }
+                                               @Override
+                                               public void run() {
+                                                   JOptionPane.showMessageDialog(null, finalResponse.err, "Warning", JOptionPane.WARNING_MESSAGE);
+                                               }
+                                           }
                 );
                 return false;
             }
@@ -78,11 +89,11 @@ public class ReviewBoardClient {
             final Response diff = reviewBoardClient.diff(reviewId, settings.getSvnBasePath(), settings.getDiff());
             if (!diff.isOk()) {
                 SwingUtilities.invokeLater(new Runnable() {
-                    @Override
-                    public void run() {
-                        JOptionPane.showMessageDialog(null, diff.err, "Warning", JOptionPane.WARNING_MESSAGE);
-                    }
-                }
+                                               @Override
+                                               public void run() {
+                                                   JOptionPane.showMessageDialog(null, diff.err, "Warning", JOptionPane.WARNING_MESSAGE);
+                                               }
+                                           }
                 );
                 return false;
             }
@@ -94,25 +105,25 @@ public class ReviewBoardClient {
         return true;
     }
 
-  private boolean updateSVNAttributes(ReviewSettings settings) {
-    try {
-      RepositoriesResponse repositoriesResponse = getRepositories();
-      if ( repositoriesResponse.isOk() ){
-        String svnPath = settings.getSvnRoot()+settings.getSvnBasePath();
-        for (Repository repo : repositoriesResponse.repositories ){
-          if ( svnPath.startsWith(repo.path)) {
-            settings.setSvnRoot(repo.path);
-            String svnBasePath = svnPath.substring(repo.path.length());
-            settings.setSvnBasePath(svnBasePath);
-            return true;
-          }
+    private boolean updateSVNAttributes(ReviewSettings settings) {
+        try {
+            RepositoriesResponse repositoriesResponse = getRepositories();
+            if (repositoriesResponse.isOk()) {
+                String svnPath = settings.getSvnRoot() + settings.getSvnBasePath();
+                for (Repository repo : repositoriesResponse.repositories) {
+                    if (svnPath.startsWith(repo.path)) {
+                        settings.setSvnRoot(repo.path);
+                        String svnBasePath = svnPath.substring(repo.path.length());
+                        settings.setSvnBasePath(svnBasePath);
+                        return true;
+                    }
+                }
+            }
+        } catch (Exception e) {
+            System.out.println("Error while getting the repositories list from the server.");
         }
-      }
-    } catch (Exception e) {
-      System.out.println("Error while getting the repositories list from the server.");
+        return false;
     }
-    return false;
-  }
 
 
     String apiUrl;
@@ -290,13 +301,13 @@ public class ReviewBoardClient {
         return gson.fromJson(json, NewReviewResponse.class);
     }
 
-  public RepositoriesResponse getRepositories() throws Exception {
-    String path = "repositories/";
-    String json = new HttpClient().httpGet(path);
-    System.out.println(json);
-    Gson gson = new Gson();
-    return gson.fromJson(json, RepositoriesResponse.class);
-  }
+    public RepositoriesResponse getRepositories() throws Exception {
+        String path = "repositories/";
+        String json = new HttpClient().httpGet(path);
+        System.out.println(json);
+        Gson gson = new Gson();
+        return gson.fromJson(json, RepositoriesResponse.class);
+    }
 }
 
 class Href {
@@ -448,43 +459,44 @@ class DraftResponse extends Response {
 
 /**
  * Repository information returned by the RB server.
- * @see-also  http://www.reviewboard.org/docs/manual/1.7/webapi/2.0/resources/repository-list/
+ *
+ * @see-also http://www.reviewboard.org/docs/manual/1.7/webapi/2.0/resources/repository-list/
  * {
-   "id": 1,
-   "links": {
-     "delete": {
-       "href": "http://reviews.example.com/api/repositories/1/",
-       "method": "DELETE"
-     },
-     "info": {
-       "href": "http://reviews.example.com/api/repositories/1/info/",
-       "method": "GET"
-     },
-     "self": {
-       "href": "http://reviews.example.com/api/repositories/1/",
-       "method": "GET"
-     },
-     "update": {
-        "href": "http://reviews.example.com/api/repositories/1/",
-        "method": "PUT"
-     }
-    },
-    "name": "Review Board SVN",
-    "path": "http://reviewboard.googlecode.com/svn",
-    "tool": "Subversion"
-  }
+ * "id": 1,
+ * "links": {
+ * "delete": {
+ * "href": "http://reviews.example.com/api/repositories/1/",
+ * "method": "DELETE"
+ * },
+ * "info": {
+ * "href": "http://reviews.example.com/api/repositories/1/info/",
+ * "method": "GET"
+ * },
+ * "self": {
+ * "href": "http://reviews.example.com/api/repositories/1/",
+ * "method": "GET"
+ * },
+ * "update": {
+ * "href": "http://reviews.example.com/api/repositories/1/",
+ * "method": "PUT"
+ * }
+ * },
+ * "name": "Review Board SVN",
+ * "path": "http://reviewboard.googlecode.com/svn",
+ * "tool": "Subversion"
+ * }
  */
 class Repository {
-  String id;
-  Map<String, Href> links;
-  String name; // name of the repository
-  String path; // repository path or root
-  String tool;
+    String id;
+    Map<String, Href> links;
+    String name; // name of the repository
+    String path; // repository path or root
+    String tool;
 
 }
 
 class RepositoriesResponse extends Response {
-  Map<String, Href> links;
-  Repository[] repositories;
-  Integer total_results;
+    Map<String, Href> links;
+    Repository[] repositories;
+    Integer total_results;
 }
