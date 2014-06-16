@@ -113,6 +113,13 @@ public class PostReviewAction extends AnAction {
             if (vf != null) {
                 vf.refresh(false, true);
                 File workingCopyRoot = SvnUtil.getWorkingCopyRoot(new File(vf.getPath()));
+                if (workingCopyRoot == null) {
+                    workingCopyRoot = SvnUtil.getWorkingCopyRootNew(new File(vf.getPath()));
+                }
+                if (workingCopyRoot == null) {
+                    Messages.showWarningDialog("Cann't get working copy root of the file:" + vf.getPath(), "Error");
+                    return;
+                }
                 System.out.println("workcopyroot:" + workingCopyRoot);
                 if (localRootDir == null && workingCopyRoot != null) {
                     localRootDir = workingCopyRoot.getPath();
