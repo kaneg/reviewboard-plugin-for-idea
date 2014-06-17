@@ -1,7 +1,7 @@
 <idea-plugin version="2">
     <name>ReviewBoard</name>
     <description>Post review to review board. Code: https://code.google.com/p/reviewboard-plugin-for-idea/</description>
-    <version>1.0.3</version>
+    <version>1.0.5</version>
     <vendor>Kane</vendor>
     <idea-version since-build="95.627"/>
     <depends>Subversion</depends>

@@ -12,7 +12,9 @@ import com.intellij.openapi.progress.ProgressIndicator;
 import com.intellij.openapi.progress.ProgressManager;
 import com.intellij.openapi.progress.Task;
 import com.intellij.openapi.project.Project;
+import com.intellij.openapi.ui.MessageType;
 import com.intellij.openapi.ui.Messages;
+import com.intellij.openapi.ui.popup.util.PopupUtil;
 import com.intellij.openapi.vcs.FilePath;
 import com.intellij.openapi.vcs.ProjectLevelVcsManager;
 import com.intellij.openapi.vcs.VcsException;
@@ -249,7 +251,8 @@ public class PostReviewAction extends AnAction {
                                 BrowserUtil.launchBrowser(url);
                             }
                         } else {
-                            Messages.showErrorDialog("Post review failure", "Error");
+//                            Messages.showErrorDialog("Post review failure", "Error");
+                            PopupUtil.showBalloonForActiveFrame("Post review failure", MessageType.ERROR);
                         }
                     }
 

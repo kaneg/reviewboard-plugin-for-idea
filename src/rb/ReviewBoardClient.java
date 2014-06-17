@@ -7,7 +7,9 @@ package rb;
 
 import com.google.gson.Gson;
 import com.intellij.openapi.progress.ProgressIndicator;
+import com.intellij.openapi.ui.MessageType;
 import com.intellij.openapi.ui.Messages;
+import com.intellij.openapi.ui.popup.util.PopupUtil;
 
 import javax.swing.*;
 import java.io.*;
@@ -44,11 +46,13 @@ public class ReviewBoardClient {
                         SwingUtilities.invokeLater(new Runnable() {
                                                        @Override
                                                        public void run() {
-                                                           Messages.showMessageDialog("Failed to get svn repository from server:" + exception.getMessage(), "Alert", null);
+//                                                           Messages.showMessageDialog("Failed to get svn repository from server:" + exception.getMessage(), "Alert", null);
+                                                           PopupUtil.showBalloonForActiveFrame("Failed to get svn repository from server:" + exception.getMessage(), MessageType.ERROR);
 
                                                        }
                                                    }
                         );
+                        return false;
 
                     }
                 }
@@ -56,7 +60,9 @@ public class ReviewBoardClient {
                     SwingUtilities.invokeLater(new Runnable() {
                                                    @Override
                                                    public void run() {
-                                                       Messages.showMessageDialog("Cannot post new request. Please check your svn setting and review board server's svn repository setting." + "You SVN root is " + settings.getSvnRoot(), "Alert", null);
+//                                                       Messages.showMessageDialog("Cannot post new request. Please check your svn setting and review board server's svn repository setting." + "You SVN root is " + settings.getSvnRoot(), "Alert", null);
+                                                       PopupUtil.showBalloonForActiveFrame("Cannot post new request. Please check your svn setting and review board server's svn repository setting." + "You SVN root is " + settings.getSvnRoot(), MessageType.ERROR);
+
                                                    }
                                                }
                     );
@@ -74,7 +80,8 @@ public class ReviewBoardClient {
                 SwingUtilities.invokeLater(new Runnable() {
                                                @Override
                                                public void run() {
-                                                   JOptionPane.showMessageDialog(null, finalResponse.err, "Warning", JOptionPane.WARNING_MESSAGE);
+//                                                   JOptionPane.showMessageDialog(null, finalResponse.err, "Warning", JOptionPane.WARNING_MESSAGE);
+                                                   PopupUtil.showBalloonForActiveFrame(finalResponse.err, MessageType.WARNING);
                                                }
                                            }
                 );
@@ -91,7 +98,8 @@ public class ReviewBoardClient {
                 SwingUtilities.invokeLater(new Runnable() {
                                                @Override
                                                public void run() {
-                                                   JOptionPane.showMessageDialog(null, diff.err, "Warning", JOptionPane.WARNING_MESSAGE);
+//                                                   JOptionPane.showMessageDialog(null, diff.err, "Warning", JOptionPane.WARNING_MESSAGE);
+                                                   PopupUtil.showBalloonForActiveFrame(diff.err, MessageType.WARNING);
                                                }
                                            }
                 );
