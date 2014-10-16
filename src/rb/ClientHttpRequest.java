@@ -36,7 +36,7 @@ public class ClientHttpRequest {
 
     protected void write(String s) throws IOException {
         connect();
-        os.write(s.getBytes());
+        os.write(s.getBytes("utf-8"));
     }
 
     protected void newline() throws IOException {
