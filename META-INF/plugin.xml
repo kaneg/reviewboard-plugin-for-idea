@@ -5,6 +5,7 @@
     <vendor>Kane</vendor>
     <idea-version since-build="95.627"/>
     <depends>Git4Idea</depends>
+    <depends>Subversion</depends>
     <depends>com.intellij.modules.lang</depends>
     <project-components>
         <component>

@@ -4,10 +4,7 @@ import com.intellij.ide.BrowserUtil;
 import com.intellij.openapi.actionSystem.AnAction;
 import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.actionSystem.PlatformDataKeys;
-import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.application.ModalityState;
-import com.intellij.openapi.diff.impl.patch.FilePatch;
-import com.intellij.openapi.fileEditor.FileDocumentManager;
 import com.intellij.openapi.progress.PerformInBackgroundOption;
 import com.intellij.openapi.progress.ProgressIndicator;
 import com.intellij.openapi.progress.ProgressManager;
@@ -25,19 +22,7 @@ import com.intellij.openapi.vcs.changes.ContentRevision;
 import com.intellij.openapi.vcs.changes.InvokeAfterUpdateMode;
 import com.intellij.openapi.vcs.history.VcsRevisionNumber;
 import com.intellij.openapi.vfs.VirtualFile;
-import git4idea.GitUtil;
-import git4idea.GitVcs;
-import git4idea.commands.GitCommand;
-import git4idea.commands.GitSimpleHandler;
-import git4idea.repo.GitRepository;
 import org.jetbrains.annotations.NotNull;
-
-import javax.swing.*;
-import java.lang.reflect.Method;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.List;
 
 /**
  * Created by IntelliJ IDEA.
@@ -49,13 +34,12 @@ public class PostReviewAction extends AnAction {
     @Override
     public void actionPerformed(AnActionEvent event) {
         final Project project = event.getData(PlatformDataKeys.PROJECT);
-//        final SvnVcs svnVcs = SvnVcs.getInstance(project);
-        final AbstractVcs vcs = GitVcs.getInstance(project);
         final VirtualFile[] vFiles = event.getData(PlatformDataKeys.VIRTUAL_FILE_ARRAY);
         if (vFiles == null || vFiles.length == 0) {
             Messages.showMessageDialog("No file to be review", "Alert", null);
             return;
         }
+        final AbstractVcs vcs = ProjectLevelVcsManager.getInstance(project).getVcsFor(vFiles[0]);
         if (!ProjectLevelVcsManager.getInstance(project).checkAllFilesAreUnder(vcs, vFiles)) {
             setActionEnable(event, true);
             Messages.showWarningDialog("Some of selected files are not under control of SVN.", "Warning");
@@ -68,7 +52,10 @@ public class PostReviewAction extends AnAction {
             public void run() {
                 System.out.println("Executing...");
                 try {
-                    execute(project, vcs, vFiles, changeListManager);
+                    VCSBuilder builder = VCSBuilder.Factory.getBuilder(vcs);
+                    if (builder != null) {
+                        execute(project, builder, vFiles, changeListManager);
+                    }
                 } catch (VcsException e) {
                     e.printStackTrace();
                 }
@@ -115,42 +102,11 @@ public class PostReviewAction extends AnAction {
         event.getPresentation().setEnabled(isEnable);
     }
 
-    private void execute(final Project project, AbstractVcs vcs, VirtualFile[] vFiles, ChangeListManager changeListManager) throws VcsException {
-        List<Change> changes = new ArrayList<Change>();
-        String changeMessage = null;
-        String localRootDir = null;
-        String remoteRootUrl = null;
-        String repositoryUrl = null;
-        VirtualFile root = null;
-        final String patch;
-        for (VirtualFile vf : vFiles) {
-            if (vf != null) {
-                vf.refresh(false, true);
-                GitRepository repositoryForFile = GitUtil.getRepositoryManager(project).getRepositoryForFile(vf);
-                repositoryUrl = repositoryForFile.getRemotes().iterator().next().getFirstUrl();
-                root = repositoryForFile.getRoot();
-                localRootDir = root.getPath();
-                break;
-            }
-        }
-
-
-        try {
-            ApplicationManager.getApplication().runWriteAction(new Runnable() {
-                public void run() {
-                    FileDocumentManager.getInstance().saveAllDocuments();
-                }
-            });
-            GitSimpleHandler handler = new GitSimpleHandler(project, root, GitCommand.DIFF);
-            handler.addParameters(new String[]{"HEAD"});
-            handler.setSilent(true);
-            handler.setStdoutSuppressed(true);
-            handler.addRelativeFiles(Arrays.asList(vFiles));
-            System.out.println(handler.printableCommandLine());
-            String diffOutput = handler.run();
-            patch = diffOutput;
-        } catch (Exception e) {
-            Messages.showWarningDialog("Svn is still in refresh. Please try again later.", "Alter");
+    private void execute(final Project project, final VCSBuilder vcsBuilder, VirtualFile[] vFiles, ChangeListManager changeListManager) throws VcsException {
+        vcsBuilder.build(project, vFiles);
+        final String diff = vcsBuilder.getDiff();
+        if (diff == null) {
+            Messages.showMessageDialog(project, "No diff generated", "Warn", null);
             return;
         }
 
@@ -178,10 +134,10 @@ public class PostReviewAction extends AnAction {
         }
 
 
-        int possibleRepoIndex = getPossibleRepoIndex(repositoryUrl, repositories);
+        int possibleRepoIndex = getPossibleRepoIndex(vcsBuilder.getRepositoryURL(), repositories);
 
-        final String finalRepositoryUrl = repositoryUrl;
-        final PrePostReviewForm prePostReviewForm = new PrePostReviewForm(project, "", patch, repositories, possibleRepoIndex) {
+        final String finalRepositoryUrl = vcsBuilder.getRepositoryURL();
+        final PrePostReviewForm prePostReviewForm = new PrePostReviewForm(project, "", diff, repositories, possibleRepoIndex) {
 
             @Override
             protected void doOKAction() {
@@ -192,13 +148,16 @@ public class PostReviewAction extends AnAction {
                 if (setting == null) {
                     return;
                 }
-
-                setting.setSvnBasePath("");
+                if (vcsBuilder.getBasePath() == null) {
+                    setting.setSvnBasePath("");
+                } else {
+                    setting.setSvnBasePath(vcsBuilder.getBasePath());
+                }
                 setting.setSvnRoot(finalRepositoryUrl);
                 if (this.getDiff() != null) {
                     setting.setDiff(this.getDiff());
                 } else {
-                    setting.setDiff(patch);
+                    setting.setDiff(diff);
                 }
                 Task.Backgroundable task = new Task.Backgroundable(project, "running", false, new PerformInBackgroundOption() {
                     @Override
@@ -264,32 +223,6 @@ public class PostReviewAction extends AnAction {
         return possibleRepoIndex;
     }
 
-
-    private List<FilePatch> buildPatch(Project project, List<Change> changes, String localRootDir, boolean b) {
-        //      List<FilePatch> filePatches = IdeaTextPatchBuilder.buildPatch(project, changes, localRootDir, false);
-//    List<FilePatch> filePatches = TextPatchBuilder.buildPatch(changes, localRootDir, false);
-        Object result = null;
-        try {//invoke the api in 10.x
-            Class c = Class.forName("com.intellij.openapi.diff.impl.patch.IdeaTextPatchBuilder");
-            Method buildPatchMethod = c.getMethod("buildPatch", Project.class, Collection.class, String.class, boolean.class);
-            result = buildPatchMethod.invoke(null, project, changes, localRootDir, b);
-        } catch (ClassNotFoundException e) {
-            try {//API in 9.0x
-                Class c = Class.forName("com.intellij.openapi.diff.impl.patch.TextPatchBuilder");
-                Method buildPatchMethod = c.getMethod("buildPatch", Collection.class, String.class, boolean.class);
-                result = buildPatchMethod.invoke(null, changes, localRootDir, b);
-            } catch (Exception e1) {
-                Messages.showErrorDialog("The current version doesn't support the review", "Not support");
-                return null;
-            }
-        } catch (Exception e) {
-            Messages.showErrorDialog("The current version doesn't support the review", "Not support");
-        }
-        if (result != null && result instanceof List) {
-            return (List<FilePatch>) result;
-        }
-        return null;
-    }
 
     public boolean isDumbAware() {
         return true;
