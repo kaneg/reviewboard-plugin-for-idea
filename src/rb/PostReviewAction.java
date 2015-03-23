@@ -4,6 +4,7 @@ import com.intellij.ide.BrowserUtil;
 import com.intellij.openapi.actionSystem.AnAction;
 import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.actionSystem.PlatformDataKeys;
+import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.application.ModalityState;
 import com.intellij.openapi.progress.PerformInBackgroundOption;
 import com.intellij.openapi.progress.ProgressIndicator;
@@ -124,20 +125,46 @@ public class PostReviewAction extends AnAction {
             return;
         }
 
-        ReviewBoardClient reviewBoardClient = new ReviewBoardClient(config.getServer(), config.getUsername(), PasswordMangler.decode(config.getEncodedPassword()));
-        Repository[] repositories;
-        try {
-            repositories = reviewBoardClient.getRepositories().repositories;
-        } catch (Exception e) {
-            PopupUtil.showBalloonForActiveFrame("Error to list repository", MessageType.ERROR);
-            return;
-        }
+        final ReviewBoardClient reviewBoardClient = new ReviewBoardClient(config.getServer(), config.getUsername(), PasswordMangler.decode(config.getEncodedPassword()));
+        Task.Backgroundable task = new Task.Backgroundable(project, "Query repository...", false, new PerformInBackgroundOption() {
+            @Override
+            public boolean shouldStartInBackground() {
+                return false;
+            }
 
+            @Override
+            public void processSentToBackground() {
+            }
+        }) {
 
+            @Override
+            public void run(@NotNull ProgressIndicator progressIndicator) {
+                progressIndicator.setIndeterminate(true);
+                Repository[] repositories = null;
+                try {
+                    repositories = reviewBoardClient.getRepositories().repositories;
+                } catch (Exception e) {
+                    PopupUtil.showBalloonForActiveFrame("Error to list repository", MessageType.ERROR);
+                    return;
+                }
+                if (repositories != null) {
+                    final Repository[] finalRepositories = repositories;
+                    ApplicationManager.getApplication().invokeLater(new Runnable() {
+                        @Override
+                        public void run() {
+                            showPostForm(project, vcsBuilder, finalRepositories);
+                        }
+                    });
+
+                }
+            }
+        };
+        ProgressManager.getInstance().run(task);
+    }
+
+    private void showPostForm(final Project project, final VCSBuilder vcsBuilder, Repository[] repositories) {
         int possibleRepoIndex = getPossibleRepoIndex(vcsBuilder.getRepositoryURL(), repositories);
-
-        final String finalRepositoryUrl = vcsBuilder.getRepositoryURL();
-        final PrePostReviewForm prePostReviewForm = new PrePostReviewForm(project, "", diff, repositories, possibleRepoIndex) {
+        final PrePostReviewForm prePostReviewForm = new PrePostReviewForm(project, "", vcsBuilder.getDiff(), repositories, possibleRepoIndex) {
 
             @Override
             protected void doOKAction() {
@@ -153,11 +180,11 @@ public class PostReviewAction extends AnAction {
                 } else {
                     setting.setSvnBasePath(vcsBuilder.getBasePath());
                 }
-                setting.setSvnRoot(finalRepositoryUrl);
+                setting.setSvnRoot(vcsBuilder.getRepositoryURL());
                 if (this.getDiff() != null) {
                     setting.setDiff(this.getDiff());
                 } else {
-                    setting.setDiff(diff);
+                    setting.setDiff(vcsBuilder.getDiff());
                 }
                 Task.Backgroundable task = new Task.Backgroundable(project, "running", false, new PerformInBackgroundOption() {
                     @Override
