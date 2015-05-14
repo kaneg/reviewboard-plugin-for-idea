@@ -20,6 +20,7 @@ public class ReviewSettings {
     private String svnRoot;
     private String svnBasePath;
     private String diff;
+    private String repoId;
 
     public String getServer() {
         return server;
@@ -123,5 +124,13 @@ public class ReviewSettings {
 
     public void setDiff(String diff) {
         this.diff = diff;
+    }
+
+    public String getRepoId() {
+        return repoId;
+    }
+
+    public void setRepoId(String repoId) {
+        this.repoId = repoId;
     }
 }

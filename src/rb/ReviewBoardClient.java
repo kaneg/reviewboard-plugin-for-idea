@@ -33,7 +33,7 @@ public class ReviewBoardClient {
                 progressIndicator.setText("Creating review draft...");
                 NewReviewResponse newRequest = null;
                 try {
-                    newRequest = reviewBoardClient.createNewRequest(settings.getSvnRoot());
+                    newRequest = reviewBoardClient.createNewRequest(settings.getRepoId());
                 } catch (final Exception exception) {
                     System.err.println("Received " + exception + ", while creating a new request");
                     // There is a very good chance that we received a 400, since the SVNRoot we
@@ -158,6 +158,7 @@ public class ReviewBoardClient {
         }
 
         if (reviewRequest != null) {
+            settings.setSummary(reviewRequest.summary);
             settings.setBranch(reviewRequest.branch);
             settings.setDescription(reviewRequest.description);
             settings.setBugsClosed(reviewRequest.getBugs_closed());
@@ -173,6 +174,8 @@ public class ReviewBoardClient {
             URL url = new URL(apiUrl + path);
             System.out.println("Http get:" + url);
             URLConnection urlConnection = url.openConnection();
+            HttpURLConnection hrc = (HttpURLConnection) urlConnection;
+            hrc.setInstanceFollowRedirects(false);
             InputStream inputStream = urlConnection.getInputStream();
             StringBuilder sb = new StringBuilder();
             BufferedReader br = new BufferedReader(new InputStreamReader(inputStream));
@@ -500,7 +503,7 @@ class Repository {
     String name; // name of the repository
     String path; // repository path or root
     String tool;
-
+    String mirror_path;
 }
 
 class RepositoriesResponse extends Response {
