@@ -25,6 +25,8 @@ import com.intellij.openapi.vcs.history.VcsRevisionNumber;
 import com.intellij.openapi.vfs.VirtualFile;
 import org.jetbrains.annotations.NotNull;
 
+import java.net.URI;
+
 /**
  * Created by IntelliJ IDEA.
  * User: Gong Zeng
@@ -245,6 +247,14 @@ public class PostReviewAction extends AnAction {
                     }
                 }
             }
+        }
+        if (possibleRepoIndex == -1) {
+            String path = URI.create(repositoryUrl).getPath();
+            String[] repos = new String[repositories.length];
+            for (int i = 0; i < repos.length; i++) {
+                repos[i] = repositories[i].name;
+            }
+            possibleRepoIndex = LevenshteinDistance.getClosest(path, repos);
         }
 
         return possibleRepoIndex;
