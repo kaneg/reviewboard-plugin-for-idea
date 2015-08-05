@@ -17,10 +17,7 @@ import com.intellij.openapi.ui.popup.util.PopupUtil;
 import com.intellij.openapi.vcs.AbstractVcs;
 import com.intellij.openapi.vcs.ProjectLevelVcsManager;
 import com.intellij.openapi.vcs.VcsException;
-import com.intellij.openapi.vcs.changes.Change;
-import com.intellij.openapi.vcs.changes.ChangeListManager;
-import com.intellij.openapi.vcs.changes.ContentRevision;
-import com.intellij.openapi.vcs.changes.InvokeAfterUpdateMode;
+import com.intellij.openapi.vcs.changes.*;
 import com.intellij.openapi.vcs.history.VcsRevisionNumber;
 import com.intellij.openapi.vfs.VirtualFile;
 import org.jetbrains.annotations.NotNull;
@@ -34,6 +31,8 @@ import java.net.URI;
  * Time: 4:17 PM
  */
 public class PostReviewAction extends AnAction {
+    String changeMessage = "";
+
     @Override
     public void actionPerformed(AnActionEvent event) {
         final Project project = event.getData(PlatformDataKeys.PROJECT);
@@ -50,6 +49,15 @@ public class PostReviewAction extends AnAction {
         }
 
         final ChangeListManager changeListManager = ChangeListManager.getInstance(project);
+
+        for (VirtualFile vf : vFiles) {
+            LocalChangeList changeList = changeListManager.getChangeList(vf);
+            if (changeList != null) {
+                changeMessage = changeList.getName();
+                break;
+            }
+        }
+
         changeListManager.invokeAfterUpdate(new Runnable() {
             @Override
             public void run() {
@@ -166,7 +174,7 @@ public class PostReviewAction extends AnAction {
 
     private void showPostForm(final Project project, final VCSBuilder vcsBuilder, Repository[] repositories) {
         int possibleRepoIndex = getPossibleRepoIndex(vcsBuilder.getRepositoryURL(), repositories);
-        final PrePostReviewForm prePostReviewForm = new PrePostReviewForm(project, "", vcsBuilder.getDiff(), repositories, possibleRepoIndex) {
+        final PrePostReviewForm prePostReviewForm = new PrePostReviewForm(project, changeMessage, vcsBuilder.getDiff(), repositories, possibleRepoIndex) {
 
             @Override
             protected void doOKAction() {
