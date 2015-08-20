@@ -154,8 +154,8 @@ public class PostReviewAction extends AnAction {
                 try {
                     repositories = reviewBoardClient.getRepositories().repositories;
                 } catch (Exception e) {
-                    PopupUtil.showBalloonForActiveFrame("Error to list repository", MessageType.ERROR);
-                    return;
+                    PopupUtil.showBalloonForActiveFrame("Error to list repository:"+e.getMessage(), MessageType.ERROR);
+                    throw new RuntimeException(e);
                 }
                 if (repositories != null) {
                     final Repository[] finalRepositories = repositories;
