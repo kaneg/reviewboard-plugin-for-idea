@@ -191,13 +191,6 @@ public class PrePostReviewForm extends DialogWrapper {
 
     public ReviewSettings getSetting() {
         ReviewSettings settings = new ReviewSettings();
-        ReviewBoardConfig config = project.getComponent(ReviewBoardConfig.class);
-
-        //from config
-        settings.setServer(config.getServer());
-        settings.setUsername(config.getUsername());
-        settings.setPassword(PasswordMangler.decode(config.getEncodedPassword()));
-
         //from ui
         if (reviewIdTextField.isEnabled()) {
             settings.setReviewId(reviewIdTextField.getText());
@@ -209,26 +202,26 @@ public class PrePostReviewForm extends DialogWrapper {
         settings.setPeople(peopleTextField.getText());
         settings.setDescription(descTextArea.getText());
         settings.setRepoId(((RepoComboItem) comboBoxRepository.getSelectedItem()).repo.id);
-        if (settings.getServer() == null || "".equals(settings.getServer())) {
-            Messages.showMessageDialog(project, "Please set the review board server address in config panel", "Info", null);
-            return null;
-        }
-        if (settings.getUsername() == null || "".equals(settings.getUsername())) {
-            Messages.showMessageDialog(project, "Please set the review board user name in config panel", "Info", null);
-            return null;
-        }
-        if (settings.getPassword() == null || "".equals(settings.getPassword())) {
-            JPasswordField pf = new JPasswordField();
-            pf.grabFocus();
-            int okCxl = JOptionPane.showConfirmDialog(null, pf, "Enter Password", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
-
-            if (okCxl == JOptionPane.OK_OPTION) {
-                String password = new String(pf.getPassword());
-                settings.setPassword(password);
-            } else {
-                return null;
-            }
-        }
+//        if (settings.getServer() == null || "".equals(settings.getServer())) {
+//            Messages.showMessageDialog(project, "Please set the review board server address in config panel", "Info", null);
+//            return null;
+//        }
+//        if (settings.getUsername() == null || "".equals(settings.getUsername())) {
+//            Messages.showMessageDialog(project, "Please set the review board user name in config panel", "Info", null);
+//            return null;
+//        }
+//        if (settings.getPassword() == null || "".equals(settings.getPassword())) {
+//            JPasswordField pf = new JPasswordField();
+//            pf.grabFocus();
+//            int okCxl = JOptionPane.showConfirmDialog(null, pf, "Enter Password", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
+//
+//            if (okCxl == JOptionPane.OK_OPTION) {
+//                String password = new String(pf.getPassword());
+//                settings.setPassword(password);
+//            } else {
+//                return null;
+//            }
+//        }
         return settings;
     }
 

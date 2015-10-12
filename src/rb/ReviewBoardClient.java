@@ -1,12 +1,14 @@
 /**
- *
  * History:
- *   11-5-15 8:39 Pm Created by ZGong
+ * 11-5-15 8:39 Pm Created by ZGong
  */
 package rb;
 
 import com.google.gson.Gson;
+import com.intellij.icons.AllIcons;
+import com.intellij.openapi.options.ShowSettingsUtil;
 import com.intellij.openapi.progress.ProgressIndicator;
+import com.intellij.openapi.project.Project;
 import com.intellij.openapi.ui.MessageType;
 import com.intellij.openapi.ui.Messages;
 import com.intellij.openapi.ui.popup.util.PopupUtil;
@@ -15,6 +17,7 @@ import javax.swing.*;
 import java.io.*;
 import java.net.*;
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -24,9 +27,8 @@ import java.util.Map;
  * @version 1.0 11-5-15 8:39 Pm
  */
 public class ReviewBoardClient {
-
-    public static boolean postReview(final ReviewSettings settings, final ProgressIndicator progressIndicator) {
-        ReviewBoardClient reviewBoardClient = new ReviewBoardClient(settings.getServer(), settings.getUsername(), settings.getPassword());
+    public static boolean postReview(final ReviewSettings settings, final ProgressIndicator progressIndicator) throws Exception {
+        ReviewBoardClient reviewBoardClient = new ReviewBoardClient();
         try {
             String reviewId = settings.getReviewId();
             if (reviewId == null || "".equals(reviewId)) {
@@ -135,19 +137,29 @@ public class ReviewBoardClient {
 
 
     String apiUrl;
+    String rbCookie;
 
-    ReviewBoardClient(String server, final String username, final String password) {
+    public ReviewBoardClient() throws Exception {
+        String server = ReviewBoardSettings.getSettings().getState().server;
+        if (server == null||server.trim().isEmpty()) {
+            Messages.showMessageDialog((Project)null, "Please set the review board server address in config panel", "Info", null);
+            ShowSettingsUtil.getInstance().showSettingsDialog(null, ReviewBoardSettings.SETTING_NAME);
+            throw new Exception("Please set the review board server address in config panel");
+        }
+
         this.apiUrl = server + "/api/";
-        class MyAuthenticator extends Authenticator {
-            public PasswordAuthentication getPasswordAuthentication() {
-                return new PasswordAuthentication(username, password.toCharArray());
+        String cookie = ReviewBoardSettings.getSettings().getState().cookie;
+        if(cookie==null){
+            cookie = ReviewBoardSettings.getSettings().getRBSession(server);
+            if(cookie==null){
+                throw new Exception("Login failed.");
             }
         }
-        Authenticator.setDefault(new MyAuthenticator());
+        this.rbCookie = cookie;
     }
 
     public static void loadReview(ReviewSettings settings, String reviewId) throws Exception {
-        ReviewBoardClient rb = new ReviewBoardClient(settings.getServer(), settings.getUsername(), settings.getPassword());
+        ReviewBoardClient rb = new ReviewBoardClient();
         ReviewRequest reviewRequest;
         try {
             DraftResponse reviewInfo = rb.getReviewInfoAsDraft(reviewId);
@@ -169,12 +181,68 @@ public class ReviewBoardClient {
         }
     }
 
+    public static String login(String server, String username, String password) throws Exception {
+        if (server.endsWith("/")) {
+            server = server.substring(0, server.length() - 1);
+        }
+        String apiUrl = server + "/api/";
+        URL url = new URL(apiUrl);
+        System.out.println("Http get:" + url);
+        URLConnection urlConnection = url.openConnection();
+        HttpURLConnection hrc = (HttpURLConnection) urlConnection;
+        hrc.setRequestProperty("Authorization", "Basic " + Base64.getEncoder().encodeToString((username + ":" + password).getBytes()));
+        hrc.setInstanceFollowRedirects(false);
+        int responseCode = hrc.getResponseCode();
+        if (responseCode == 401) {
+            throw new Exception("The username or password was not correct");
+        }
+        InputStream inputStream = hrc.getInputStream();
+        StringBuilder sb = new StringBuilder();
+        BufferedReader br = new BufferedReader(new InputStreamReader(inputStream));
+        String line;
+        while ((line = br.readLine()) != null) {
+            sb.append(line);
+        }
+        Gson gson = new Gson();
+        Response response = gson.fromJson(sb.toString(), Response.class);
+        if (response.isOk()) {
+            CookieManager cm = new CookieManager();
+            cm.put(url.toURI(), hrc.getHeaderFields());
+            java.util.List<HttpCookie> hcs = cm.getCookieStore().getCookies();
+            for (HttpCookie cookie : hcs) {
+                if (cookie.getName().equals("rbsessionid")) {
+                    return "rbsessionid=" + cookie.getValue();
+                }
+            }
+            throw new Exception("The username or password was not correct");
+        } else {
+            throw new Exception(response.err);
+        }
+    }
+
     class HttpClient {
+        private String cookie;
+
+        public HttpClient() {
+            this(rbCookie);
+        }
+
+        public HttpClient(String cookie) {
+            this.cookie = cookie;
+        }
+
+        private void addCookie(URLConnection connection) {
+            if (cookie != null) {
+                connection.setRequestProperty("Cookie", cookie);
+            }
+        }
+
         public String httpGet(String path) throws Exception {
             URL url = new URL(apiUrl + path);
             System.out.println("Http get:" + url);
             URLConnection urlConnection = url.openConnection();
             HttpURLConnection hrc = (HttpURLConnection) urlConnection;
+            addCookie(hrc);
             hrc.setInstanceFollowRedirects(false);
             InputStream inputStream = urlConnection.getInputStream();
             StringBuilder sb = new StringBuilder();
@@ -193,6 +261,7 @@ public class ReviewBoardClient {
             urlConnection.setDoInput(true);
             urlConnection.setDoOutput(true);
             HttpURLConnection http = (HttpURLConnection) urlConnection;
+            addCookie(http);
             http.setRequestMethod(method);
             OutputStream outputStream = urlConnection.getOutputStream();
             PrintWriter pw = new PrintWriter(outputStream, true);
@@ -217,6 +286,7 @@ public class ReviewBoardClient {
             urlConnection.setDoInput(true);
             urlConnection.setDoOutput(true);
             HttpURLConnection http = (HttpURLConnection) urlConnection;
+            addCookie(http);
             http.setRequestMethod(method);
             ClientHttpRequest chr = new ClientHttpRequest(http);
             InputStream inputStream = chr.post(params);

@@ -7,15 +7,13 @@
     <depends>Git4Idea</depends>
     <depends>Subversion</depends>
     <depends>com.intellij.modules.lang</depends>
-    <project-components>
-        <component>
-            <implementation-class>rb.ReviewBoardConfig</implementation-class>
-        </component>
-    </project-components>
-
     <actions>
         <action id="PostReview" class="rb.PostReviewAction" text="PostReview" description="Post Review">
             <add-to-group group-id="ChangesViewPopupMenu" anchor="last" relative-to-action=""/>
         </action>
     </actions>
+    <extensions defaultExtensionNs="com.intellij">
+        <applicationService serviceImplementation="rb.ReviewBoardSettings"/>
+        <applicationConfigurable instance="rb.ReviewBoardSettings"/>
+    </extensions>
 </idea-plugin>

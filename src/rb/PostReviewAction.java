@@ -67,7 +67,7 @@ public class PostReviewAction extends AnAction {
                     if (builder != null) {
                         execute(project, builder, vFiles, changeListManager);
                     }
-                } catch (VcsException e) {
+                } catch (Exception e) {
                     e.printStackTrace();
                 }
             }
@@ -113,7 +113,7 @@ public class PostReviewAction extends AnAction {
         event.getPresentation().setEnabled(isEnable);
     }
 
-    private void execute(final Project project, final VCSBuilder vcsBuilder, VirtualFile[] vFiles, ChangeListManager changeListManager) throws VcsException {
+    private void execute(final Project project, final VCSBuilder vcsBuilder, VirtualFile[] vFiles, ChangeListManager changeListManager) throws Exception {
         vcsBuilder.build(project, vFiles);
         final String diff = vcsBuilder.getDiff();
         if (diff == null) {
@@ -121,21 +121,21 @@ public class PostReviewAction extends AnAction {
             return;
         }
 
-        ReviewBoardConfig config = project.getComponent(ReviewBoardConfig.class);
-        if (config.getServer() == null || config.getServer().isEmpty()) {
-            Messages.showMessageDialog(project, "Please set the review board server address in config panel", "Info", null);
-            return;
-        }
-        if (config.getUsername() == null || "".equals(config.getUsername())) {
-            Messages.showMessageDialog(project, "Please set the review board user name in config panel", "Info", null);
-            return;
-        }
-        if (config.getEncodedPassword() == null || config.getEncodedPassword().isEmpty()) {
-            Messages.showMessageDialog(project, "Please set the view board password in config panel", "Info", null);
-            return;
-        }
+//        ReviewBoardConfig config = project.getComponent(ReviewBoardConfig.class);
+//        if (config.getServer() == null || config.getServer().isEmpty()) {
+//            Messages.showMessageDialog(project, "Please set the review board server address in config panel", "Info", null);
+//            return;
+//        }
+//        if (config.getUsername() == null || "".equals(config.getUsername())) {
+//            Messages.showMessageDialog(project, "Please set the review board user name in config panel", "Info", null);
+//            return;
+//        }
+//        if (config.getEncodedPassword() == null || config.getEncodedPassword().isEmpty()) {
+//            Messages.showMessageDialog(project, "Please set the view board password in config panel", "Info", null);
+//            return;
+//        }
 
-        final ReviewBoardClient reviewBoardClient = new ReviewBoardClient(config.getServer(), config.getUsername(), PasswordMangler.decode(config.getEncodedPassword()));
+        final ReviewBoardClient reviewBoardClient = new ReviewBoardClient();
         Task.Backgroundable task = new Task.Backgroundable(project, "Query repository...", false, new PerformInBackgroundOption() {
             @Override
             public boolean shouldStartInBackground() {
@@ -226,7 +226,11 @@ public class PostReviewAction extends AnAction {
                     @Override
                     public void run(@NotNull ProgressIndicator progressIndicator) {
                         progressIndicator.setIndeterminate(true);
-                        result = ReviewBoardClient.postReview(setting, progressIndicator);
+                        try {
+                            result = ReviewBoardClient.postReview(setting, progressIndicator);
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
                     }
                 };
                 ProgressManager.getInstance().run(task);
