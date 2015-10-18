@@ -2,6 +2,7 @@ package rb;
 
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
+import java.io.UnsupportedEncodingException;
 
 /**
  * Created by IntelliJ IDEA.
@@ -34,7 +35,7 @@ public class MemoryFile {
         this.content = content;
     }
 
-    public InputStream getInputStream() {
-        return new ByteArrayInputStream(content.getBytes());
+    public InputStream getInputStream() throws UnsupportedEncodingException {
+        return new ByteArrayInputStream(content.getBytes("utf-8"));
     }
 }
