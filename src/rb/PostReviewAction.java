@@ -211,7 +211,7 @@ public class PostReviewAction extends AnAction {
                     @Override
                     public void onSuccess() {
                         if (result) {
-                            String url = setting.getServer() + "/r/" + setting.getReviewId() + "/diff/";
+                            String url = ReviewBoardSettings.getSettings().getServer() + "/r/" + setting.getReviewId() + "/diff/";
                             int success = Messages.showYesNoDialog("The review url is " + url + "\r\n" +
                                     "Open the url?", "Success", null);
                             if (success == 0) {

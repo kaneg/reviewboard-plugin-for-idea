@@ -135,6 +135,10 @@ public class ReviewBoardSettings implements PersistentStateComponent<ReviewBoard
 
     }
 
+    public String getServer() {
+        return getSettings().getState().server;
+    }
+
     public static class State {
         public String server;
         public String cookie;
