@@ -168,8 +168,6 @@ public class SVNVCSBuilder implements VCSBuilder {
     }
 
     private List<FilePatch> buildPatch(Project project, List<Change> changes, String localRootDir, boolean b) {
-        //      List<FilePatch> filePatches = IdeaTextPatchBuilder.buildPatch(project, changes, localRootDir, false);
-//    List<FilePatch> filePatches = TextPatchBuilder.buildPatch(changes, localRootDir, false);
         Object result = null;
         try {//invoke the api in 10.x
             Class c = Class.forName("com.intellij.openapi.diff.impl.patch.IdeaTextPatchBuilder");

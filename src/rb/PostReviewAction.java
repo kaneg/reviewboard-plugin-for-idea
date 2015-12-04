@@ -16,7 +16,6 @@ import com.intellij.openapi.ui.Messages;
 import com.intellij.openapi.ui.popup.util.PopupUtil;
 import com.intellij.openapi.vcs.AbstractVcs;
 import com.intellij.openapi.vcs.ProjectLevelVcsManager;
-import com.intellij.openapi.vcs.VcsException;
 import com.intellij.openapi.vcs.changes.*;
 import com.intellij.openapi.vcs.history.VcsRevisionNumber;
 import com.intellij.openapi.vfs.VirtualFile;
@@ -65,7 +64,7 @@ public class PostReviewAction extends AnAction {
                 try {
                     VCSBuilder builder = VCSBuilder.Factory.getBuilder(vcs);
                     if (builder != null) {
-                        execute(project, builder, vFiles, changeListManager);
+                        execute(project, builder, vFiles);
                     }
                 } catch (Exception e) {
                     e.printStackTrace();
@@ -113,7 +112,7 @@ public class PostReviewAction extends AnAction {
         event.getPresentation().setEnabled(isEnable);
     }
 
-    private void execute(final Project project, final VCSBuilder vcsBuilder, VirtualFile[] vFiles, ChangeListManager changeListManager) throws Exception {
+    private void execute(final Project project, final VCSBuilder vcsBuilder, VirtualFile[] vFiles) throws Exception {
         vcsBuilder.build(project, vFiles);
         final String diff = vcsBuilder.getDiff();
         if (diff == null) {
@@ -121,22 +120,8 @@ public class PostReviewAction extends AnAction {
             return;
         }
 
-//        ReviewBoardConfig config = project.getComponent(ReviewBoardConfig.class);
-//        if (config.getServer() == null || config.getServer().isEmpty()) {
-//            Messages.showMessageDialog(project, "Please set the review board server address in config panel", "Info", null);
-//            return;
-//        }
-//        if (config.getUsername() == null || "".equals(config.getUsername())) {
-//            Messages.showMessageDialog(project, "Please set the review board user name in config panel", "Info", null);
-//            return;
-//        }
-//        if (config.getEncodedPassword() == null || config.getEncodedPassword().isEmpty()) {
-//            Messages.showMessageDialog(project, "Please set the view board password in config panel", "Info", null);
-//            return;
-//        }
-
         final ReviewBoardClient reviewBoardClient = new ReviewBoardClient();
-        Task.Backgroundable task = new Task.Backgroundable(project, "Query repository...", false, new PerformInBackgroundOption() {
+        Task.Backgroundable task = new Task.Backgroundable(project, "Query Repository...", false, new PerformInBackgroundOption() {
             @Override
             public boolean shouldStartInBackground() {
                 return false;
@@ -150,11 +135,11 @@ public class PostReviewAction extends AnAction {
             @Override
             public void run(@NotNull ProgressIndicator progressIndicator) {
                 progressIndicator.setIndeterminate(true);
-                Repository[] repositories = null;
+                Repository[] repositories;
                 try {
                     repositories = reviewBoardClient.getRepositories().repositories;
                 } catch (Exception e) {
-                    PopupUtil.showBalloonForActiveFrame("Error to list repository:"+e.getMessage(), MessageType.ERROR);
+                    PopupUtil.showBalloonForActiveFrame("Error to list repository:" + e.getMessage(), MessageType.ERROR);
                     throw new RuntimeException(e);
                 }
                 if (repositories != null) {
@@ -196,7 +181,7 @@ public class PostReviewAction extends AnAction {
                 } else {
                     setting.setDiff(vcsBuilder.getDiff());
                 }
-                Task.Backgroundable task = new Task.Backgroundable(project, "running", false, new PerformInBackgroundOption() {
+                Task.Backgroundable task = new Task.Backgroundable(project, "Running", false, new PerformInBackgroundOption() {
                     @Override
                     public boolean shouldStartInBackground() {
                         return false;
@@ -215,7 +200,7 @@ public class PostReviewAction extends AnAction {
                             int success = Messages.showYesNoDialog("The review url is " + url + "\r\n" +
                                     "Open the url?", "Success", null);
                             if (success == 0) {
-                                BrowserUtil.launchBrowser(url);
+                                BrowserUtil.browse(url);
                             }
                         } else {
 //                            Messages.showErrorDialog("Post review failure", "Error");
