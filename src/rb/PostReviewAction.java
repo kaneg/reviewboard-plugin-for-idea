@@ -246,6 +246,9 @@ public class PostReviewAction extends AnAction {
             }
         }
         if (possibleRepoIndex == -1) {
+            if (!repositoryUrl.contains("//")) {
+                repositoryUrl = "//" + repositoryUrl;
+            }
             String path = URI.create(repositoryUrl).getPath();
             String[] repos = new String[repositories.length];
             for (int i = 0; i < repos.length; i++) {
